@@ -66,7 +66,6 @@ typedef enum {
   R5,
   R6,
   R7,
-  R8,
   NUM_REGISTERS
 } registers_enum;
 
