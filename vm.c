@@ -4,6 +4,8 @@
 #include <string.h>
 
 #include "utils/mystdint.h"
+#include "utils/fault.h"
+
 #include "vm.h"
 #include "opcode_table.h"
 
@@ -84,12 +86,6 @@ bool init_vm(vm_s *vm, char *binary_name) {
 void free_vm(vm_s *vm) {
   free(vm->program);
   vm->program = NULL;
-}
-
-static bool vm_fault(vm_s *vm, const char *msg) {
-  printf("[VM ERROR] pc=0x%04X: %s\n", (unsigned)(vm->pc - 4), msg);
-  vm->running = false;
-  return false;
 }
 
 static bool jump_to(vm_s *vm, u16 instr_index) {
