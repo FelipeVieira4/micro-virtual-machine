@@ -3,11 +3,29 @@
 ; +================================+
 
 SET R0, 0        ; 0: contador
-SET R1, 100       ; 1: limite
-SYS_CALL 0, R0   ; 2: imprime R0
+SET R1, 25       ; 1: limite
 
-INC R0           ; 3
-LT R0, R1        ; 4: flag = R0 < 10
-JMP 2, 1         ; 5: volta para a instrucao 2 se flag
+loop_for:
+SYS_CALL 0x00, R0
+
+INC R0
+LT R0, R1
+JMP loop_for, 1
+
+CALL print
 
 SYS_EXIT         ; 15
+
+; printar do 50... até 65
+print:
+SET R0, 50        ; 0: contador
+SET R1, 65       ; 1: limite
+
+loop_for_2:
+SYS_CALL 0x00, R0
+
+INC R0
+LT R0, R1
+JMP loop_for_2, 1
+
+RETURN
