@@ -1,0 +1,13 @@
+; +================================+
+; | REALIZAR CONTAGEM DE 1 ATÉ 100 |
+; +================================+
+
+SET R0, 0        ; 0: contador
+SET R1, 100       ; 1: limite
+SYS_CALL 0, R0   ; 2: imprime R0
+
+INC R0           ; 3
+LT R0, R1        ; 4: flag = R0 < 10
+JMP 2, 1         ; 5: volta para a instrucao 2 se flag
+
+SYS_EXIT         ; 15
