@@ -1,5 +1,5 @@
-#ifndef MYSTDINT_H
-#define MYSTDINT_H
+#ifndef _MYSTDINT_H_
+#define _MYSTDINT_H_
 
 #include <stdint.h>
 

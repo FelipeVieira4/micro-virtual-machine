@@ -1,5 +1,5 @@
-#ifndef _OPCODE_TABLE_H
-#define _OPCODE_TABLE_H
+#ifndef _OPCODE_TABLE_H_
+#define _OPCODE_TABLE_H_
 
 #include "utils/mystdint.h"
 
