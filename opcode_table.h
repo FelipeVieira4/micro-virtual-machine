@@ -4,7 +4,8 @@
 #include "utils/mystdint.h"
 
 typedef enum {
-    OPC_MOV      = 0x01, // Registers opcodes
+    OPC_NOP      = 0x00,
+    OPC_MOV, // Registers opcodes
     OPC_SET,
     OPC_LOAD,
     OPC_STORE,
@@ -13,16 +14,18 @@ typedef enum {
     OPC_DEC,
     OPC_DIV,
     OPC_MUL,
+    OPC_ADD,
+    OPC_SUB,
 
-    OPC_CMP      = 0x14, // Condition opcodes
+    OPC_CMP      = 0x1C, // Condition opcodes
     OPC_GT,
     OPC_LT,
 
-    OPC_GOTO     = 0x1E, // Control flow opcodes
+    OPC_CALL     = 0x26, // Control flow opcodes
     OPC_JMP,
     OPC_RETURN,
 
-    OPC_SYS_CALL = 0x28, // System calls
+    OPC_SYS_CALL = 0x2C, // System calls
     OPC_SYS_EXIT,
 
     NUM_OPC
@@ -34,6 +37,7 @@ typedef struct {
 } mapper_s;
 
 static const mapper_s opcode_mapper[] = {
+	{"NOP", OPC_NOP},
     {"MOV",      OPC_MOV},
     {"SET",      OPC_SET},
     {"LOAD",     OPC_LOAD},
@@ -43,12 +47,14 @@ static const mapper_s opcode_mapper[] = {
     {"DEC",      OPC_DEC},
     {"DIV",      OPC_DIV},
     {"MUL",      OPC_MUL},
+	{"ADD",      OPC_ADD},
+    {"SUB",      OPC_SUB},
 
     {"CMP",      OPC_CMP},
     {"GT",       OPC_GT},
     {"LT",       OPC_LT},
 
-    {"GOTO",     OPC_GOTO},
+    {"CALL",     OPC_CALL},
     {"JMP",      OPC_JMP},
     {"RETURN",   OPC_RETURN},
 

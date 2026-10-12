@@ -12,9 +12,8 @@ int main(int argc, char *argv[]) {
 
   if (!init_vm(&virtual_machine,argv[1])) return 0;
 
-  cycle_vm(&virtual_machine);
-  cycle_vm(&virtual_machine);
-  cycle_vm(&virtual_machine);
+  while (virtual_machine.running && cycle_vm(&virtual_machine)) { }
+  free_vm(&virtual_machine);
   
   return 1;
 }
