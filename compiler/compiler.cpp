@@ -140,10 +140,9 @@ static bool run_pass(FILE *src, FILE *out,CLabelIndexer *labelIndexer, int pass)
       tok[strlen(tok) - 1] = '\0';
 
       if (pass == 1 && !labelIndexer->push_new_label(tok,instr_index)) {
-        printf("[ERROR] linha %d: nome de label invalido '%s'\n", lineno, tok);
+        printf("[ERROR] linha %d: implementação da label '%s'\n", lineno, tok);
         return false;
       }
-      //if (pass == 1 && !add_label(labels, tok, instr_index, lineno)) return false;
       tok = strtok(NULL, DELIMS);
     }
     if (!tok) continue;                          /* vazia, comentario ou so label */
