@@ -11,50 +11,7 @@
 #include "../utils/mystdint.h"
 #include "../opcode_table.h"
 
-#define DELIMS " ,\t\r\n"
-#define ARRAY_LEN(a) (sizeof(a) / sizeof((a)[0]))
-#define LINE_MAX_LEN 256
-#define FIELD12_MAX  4095   /* maior valor que cabe em 12 bits */
-
 using namespace std;
-
-/*
-  Opcodes Types:
-
-  [0] Default:
-  OPC[8 bit] Cond1 [12 bit] Cond2[12 bit]
-
-  [1] for Jumps and Calls
-  OPC[8 bit] Cond1 [21 bit] Cond2[3 bit]
-
-  [2] (in Future)
-  for LOCAL, STORE etc...
-  OPC[8 bit] Cond1 [4 bit] Cond2[20 bit]
-*/
-
-/* ------------------------------------------------------------------ */
-/* opcodes / registradores                                            */
-/* ------------------------------------------------------------------ */
-
-static bool lookup_opcode(const char *name, u8 *out) {
-  for (size_t i = 0; i < ARRAY_LEN(opcode_mapper); i++) {
-    if (strcmp(name, opcode_mapper[i].str_name) == 0) {
-      *out = opcode_mapper[i].opcode_value;
-      return true;
-    }
-  }
-  return false;
-}
-
-static bool lookup_register(const char *name, u16 *out) {
-  for (size_t i = 0; i < ARRAY_LEN(registers_mapper); i++) {
-    if (strcmp(name, registers_mapper[i].str_name) == 0) {
-      *out = registers_mapper[i].opcode_value;
-      return true;
-    }
-  }
-  return false;
-}
 
 /* ------------------------------------------------------------------ */
 /* operandos e codificacao                                            */
