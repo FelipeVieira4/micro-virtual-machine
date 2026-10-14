@@ -1,10 +1,13 @@
+#include <iostream>
+#include <optional>
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <ctype.h>
 
-#include "compiler.h"
+#include "compiler.hpp"
 #include "../utils/mystdint.h"
 #include "../opcode_table.h"
 
@@ -12,6 +15,8 @@
 #define ARRAY_LEN(a) (sizeof(a) / sizeof((a)[0]))
 #define LINE_MAX_LEN 256
 #define FIELD12_MAX  4095   /* maior valor que cabe em 12 bits */
+
+using namespace std;
 
 /*
   Opcodes Types:
@@ -52,56 +57,12 @@ static bool lookup_register(const char *name, u16 *out) {
 }
 
 /* ------------------------------------------------------------------ */
-/* labels                                                             */
-/* ------------------------------------------------------------------ */
-
-static const label_s *find_label(const label_table_s *t, const char *name) {
-  for (size_t i = 0; i < t->count; i++)
-    if (strcmp(t->list[i].name, name) == 0) return &t->list[i];
-  return NULL;
-}
-
-/* label nao pode ter o mesmo nome de opcode ou registrador */
-static bool is_reserved_name(const char *name) {
-  u8  dummy_op;
-  u16 dummy_reg;
-  return lookup_opcode(name, &dummy_op) || lookup_register(name, &dummy_reg);
-}
-
-static bool add_label(label_table_s *t, const char *name, u32 loc, int lineno) {
-  size_t len = strlen(name);
-
-  if (len == 0 || len >= LABEL_NAME_MAX ||
-      !(isalpha((unsigned char)name[0]) || name[0] == '_')) {
-    printf("[ERROR] linha %d: nome de label invalido '%s'\n", lineno, name);
-    return false;
-  }
-  if (is_reserved_name(name)) {
-    printf("[ERROR] linha %d: '%s' e nome reservado\n", lineno, name);
-    return false;
-  }
-  if (find_label(t, name)) {
-    printf("[ERROR] linha %d: label '%s' duplicada\n", lineno, name);
-    return false;
-  }
-  if (t->count >= MAX_LABELS) {
-    printf("[ERROR] linha %d: maximo de %d labels\n", lineno, MAX_LABELS);
-    return false;
-  }
-
-  strcpy(t->list[t->count].name, name);          /* tamanho ja validado */
-  t->list[t->count].memory_location = loc;
-  t->count++;
-  return true;
-}
-
-/* ------------------------------------------------------------------ */
 /* operandos e codificacao                                            */
 /* ------------------------------------------------------------------ */
 
 /* aceita NULL, registrador, numero (0 a 4095, decimal ou 0xHEX) ou label */
 
-static bool parse_operand(const char *s, u16 *out, const label_table_s *labels) {
+static bool parse_operand(const char *s, u16 *out,CLabelIndexer *labelIndexer) {
   if (!s) { *out = 0; return true; }
 
   if (lookup_register(s, out)) return true;
@@ -114,9 +75,19 @@ static bool parse_operand(const char *s, u16 *out, const label_table_s *labels) 
     return true;
   }
 
+  /*
   const label_s *l = labels ? find_label(labels, s) : NULL;
   if (!l || l->memory_location > FIELD12_MAX) return false;
   *out = (u16)l->memory_location;
+  */
+
+  optional<u32> memory_position=labelIndexer->get_memory_position(s);
+  if (memory_position.has_value() && memory_position.value() < FIELD12_MAX){
+    *out = (u16)memory_position.value();
+  }else{
+    return false;
+  }
+
   return true;
 }
 
@@ -143,7 +114,7 @@ u32 generate_opcode(u8 opcode, u16 condic1, u16 condic2) {
 /*   pass 2: resolve operandos e escreve o binario                    */
 /* ------------------------------------------------------------------ */
 
-static bool run_pass(FILE *src, FILE *out, label_table_s *labels, int pass) {
+static bool run_pass(FILE *src, FILE *out,CLabelIndexer *labelIndexer, int pass) {
   char buffer[LINE_MAX_LEN];
   int  lineno = 0;
   u32  instr_index = 0;                          /* instrucoes vistas ate agora */
@@ -167,7 +138,12 @@ static bool run_pass(FILE *src, FILE *out, label_table_s *labels, int pass) {
     /* zero ou mais labels no comeco da linha: "loop:" ou "loop: INC R0" */
     while (tok && tok[strlen(tok) - 1] == ':') {
       tok[strlen(tok) - 1] = '\0';
-      if (pass == 1 && !add_label(labels, tok, instr_index, lineno)) return false;
+
+      if (pass == 1 && !labelIndexer->push_new_label(tok,instr_index)) {
+        printf("[ERROR] linha %d: nome de label invalido '%s'\n", lineno, tok);
+        return false;
+      }
+      //if (pass == 1 && !add_label(labels, tok, instr_index, lineno)) return false;
       tok = strtok(NULL, DELIMS);
     }
     if (!tok) continue;                          /* vazia, comentario ou so label */
@@ -188,7 +164,7 @@ static bool run_pass(FILE *src, FILE *out, label_table_s *labels, int pass) {
     if (pass == 1) { instr_index++; continue; }  /* so conta */
 
     u16 c1, c2;
-    if (!parse_operand(arg1, &c1, labels) || !parse_operand(arg2, &c2, labels)) {
+    if (!parse_operand(arg1, &c1, labelIndexer) || !parse_operand(arg2, &c2, labelIndexer)) {
       printf("[ERROR] linha %d: operando invalido ou label inexistente (0 a %d)\n",
              lineno, FIELD12_MAX);
       return false;
@@ -203,6 +179,8 @@ static bool run_pass(FILE *src, FILE *out, label_table_s *labels, int pass) {
 }
 
 bool compile_file(char *patch_file, char *binary_file_output) {
+  CLabelIndexer labelIndexer = CLabelIndexer();
+
   FILE *source_file = fopen(patch_file, "r");
   if (!source_file) {
     printf("[ERROR] Open File: %s\n", patch_file);
@@ -216,13 +194,10 @@ bool compile_file(char *patch_file, char *binary_file_output) {
     return false;
   }
 
-  label_table_s labels;
-  labels.count = 0;
-
-  bool status = run_pass(source_file, NULL, &labels, 1);   // gerar labels
+  bool status = run_pass(source_file, NULL, &labelIndexer, 1);   // gerar labels
   if (status) {
     rewind(source_file);
-    status = run_pass(source_file, out, &labels, 2);       // gerar binario
+    status = run_pass(source_file, out, &labelIndexer, 2);       // gerar binario
   }
 
   fclose(out);

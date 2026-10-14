@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "compiler.h"
+#include "compiler.hpp"
 
 int main(int argc,char *argv[]) {
   if (argc<3){
